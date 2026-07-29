@@ -1,0 +1,26 @@
+# OS cruft
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Editors / IDEs
+.vscode/
+.idea/
+*.swp
+
+# Claude Code local state
+.claude/settings.local.json
+
+# Node (if a build step is ever added)
+node_modules/
+
+# Python (if scripts are ever added)
+__pycache__/
+*.pyc
+.venv/
+.env
+
+# Local scratch
+*.log
+tmp/
+scratch/

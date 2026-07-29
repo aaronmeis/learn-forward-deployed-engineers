@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Forward Deployed Engineers — The Enterprise AI Deployment Model</title>
+<style>
+  :root {
+    --page: #f9f9f7;
+    --surface-1: #fcfcfb;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --muted: #898781;
+    --grid: #e1e0d9;
+    --baseline: #c3c2b7;
+    --border: rgba(11,11,11,0.10);
+    --series-1: #2a78d6;
+    --series-2: #1baf7a;
+    --delta-good: #006300;
+    --accent: #2a78d6;
+    --code-bg: #f0efec;
+    --diff-add-bg: #e2f3e6;
+    --diff-add-ink: #006300;
+    --diff-del-bg: #fbe7e7;
+    --diff-del-ink: #a12626;
+    --status-good: #0ca30c;
+    --status-crit: #d03b3b;
+  }
+  html[data-theme="dark"] {
+    --page: #0d0d0d;
+    --surface-1: #1a1a19;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --muted: #898781;
+    --grid: #2c2c2a;
+    --baseline: #383835;
+    --border: rgba(255,255,255,0.10);
+    --series-1: #3987e5;
+    --series-2: #199e70;
+    --delta-good: #0ca30c;
+    --accent: #3987e5;
+    --code-bg: #242423;
+    --diff-add-bg: #143a1c;
+    --diff-add-ink: #7fd490;
+    --diff-del-bg: #421c1c;
+    --diff-del-ink: #eb9c9c;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: var(--page);
+    color: var(--text-primary);
+    line-height: 1.6;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  nav {
+    position: sticky; top: 0; z-index: 50;
+    background: color-mix(in srgb, var(--surface-1) 88%, transparent);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 4px;
+    padding: 10px 20px; flex-wrap: wrap;
+  }
+  nav .brand { font-weight: 700; margin-right: 12px; font-size: 15px; }
+  nav .brand span { color: var(--accent); }
+  nav a.navlink { color: var(--text-secondary); font-size: 13.5px; padding: 5px 10px; border-radius: 7px; }
+  nav a.navlink:hover { background: var(--code-bg); text-decoration: none; color: var(--text-primary); }
+  #themeBtn {
+    margin-left: auto; cursor: pointer; border: 1px solid var(--border);
+    background: var(--surface-1); color: var(--text-primary);
+    border-radius: 8px; padding: 5px 12px; font-size: 13px; font-family: inherit;
+  }
+  .wrap { max-width: 1060px; margin: 0 auto; padding: 0 22px; }
+  section { padding: 56px 0 8px; }
+  h1 { font-size: clamp(30px, 5.5vw, 52px); line-height: 1.12; letter-spacing: -0.02em; }
+  h2 { font-size: 26px; letter-spacing: -0.01em; margin-bottom: 6px; }
+  h3 { font-size: 17px; margin-bottom: 4px; }
+  .kicker {
+    font-size: 12.5px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.09em; color: var(--accent); margin-bottom: 8px;
+  }
+  .lede { color: var(--text-secondary); font-size: 16.5px; max-width: 760px; }
+  header.hero { padding: 84px 0 40px; }
+  .hero .grad {
+    background: linear-gradient(92deg, var(--series-1), var(--series-2));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .hero-stats { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 30px; }
+  .tile {
+    background: var(--surface-1); border: 1px solid var(--border);
+    border-radius: 12px; padding: 16px 20px; min-width: 176px; flex: 1;
+  }
+  .tile .val { font-size: 30px; font-weight: 700; }
+  .tile .val .up { color: var(--delta-good); font-size: 17px; font-weight: 700; }
+  .tile .lbl { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+  .hero-cta { margin-top: 26px; display: flex; gap: 12px; flex-wrap: wrap; }
+  .btn {
+    display: inline-block; border-radius: 9px; padding: 10px 20px;
+    font-size: 14.5px; font-weight: 600; cursor: pointer; border: 1px solid var(--border);
+    background: var(--surface-1); color: var(--text-primary); font-family: inherit;
+  }
+  .btn.primary { background: var(--accent); color: #fff; border-color: transparent; }
+  .btn:hover { text-decoration: none; filter: brightness(1.06); }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 14px; margin-top: 22px; }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; }
+  .card p { color: var(--text-secondary); font-size: 14px; margin-top: 4px; }
+  .loop { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 24px; }
+  .loop-step {
+    flex: 1; min-width: 148px; background: var(--surface-1);
+    border: 1.5px solid var(--border); border-radius: 12px;
+    padding: 14px; cursor: pointer; position: relative;
+    transition: border-color .15s, transform .15s;
+  }
+  .loop-step:hover { transform: translateY(-2px); }
+  .loop-step.active { border-color: var(--accent); }
+  .loop-step .num {
+    width: 24px; height: 24px; border-radius: 50%; display: flex;
+    align-items: center; justify-content: center; font-size: 12px; font-weight: 700;
+    background: var(--code-bg); color: var(--text-secondary); margin-bottom: 8px;
+  }
+  .loop-step.active .num { background: var(--accent); color: #fff; }
+  .loop-step .t { font-weight: 650; font-size: 13.5px; line-height: 1.3; }
+  .loop-detail {
+    margin-top: 14px; background: var(--surface-1); border: 1px solid var(--border);
+    border-left: 3px solid var(--accent); border-radius: 10px; padding: 18px 22px;
+    min-height: 96px;
+  }
+  .loop-detail h3 { color: var(--accent); }
+  .loop-detail p { color: var(--text-secondary); font-size: 14.5px; }
+  .sim { margin-top: 20px; background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 20px 22px; }
+  .sim-head { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .sim-score { margin-left: auto; font-size: 14px; color: var(--text-secondary); }
+  .sim-score b { font-size: 22px; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+  .sim-log {
+    margin-top: 14px; background: var(--code-bg); border-radius: 9px;
+    font-family: ui-monospace, Consolas, monospace; font-size: 13px;
+    padding: 14px 16px; height: 216px; overflow-y: auto; line-height: 1.75;
+  }
+  .sim-log div { opacity: 0; animation: fadein .35s forwards; }
+  @keyframes fadein { to { opacity: 1; } }
+  .sim-log .ok  { color: var(--status-good); }
+  .sim-log .rej { color: var(--status-crit); }
+  .sim-log .dim { color: var(--muted); }
+  .viz-root { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 22px 24px; margin-top: 22px; }
+  .viz-title { font-size: 15.5px; font-weight: 650; }
+  .viz-sub { font-size: 13px; color: var(--muted); margin-bottom: 14px; }
+  .legend { display: flex; gap: 18px; font-size: 13px; color: var(--text-secondary); margin-bottom: 14px; }
+  .legend .sw { display: inline-block; width: 11px; height: 11px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+  .bench { margin-bottom: 16px; }
+  .bench-name { font-size: 13.5px; font-weight: 600; margin-bottom: 5px; display: flex; justify-content: space-between; }
+  .bench-name .delta { color: var(--delta-good); font-weight: 700; font-size: 13px; }
+  .barrow { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+  .bartrack { flex: 1; position: relative; height: 18px; }
+  .bar {
+    position: absolute; left: 0; top: 0; height: 18px;
+    border-radius: 0 4px 4px 0; width: 0;
+    transition: width 1s cubic-bezier(.22,1,.36,1);
+  }
+  .bar.b1 { background: var(--series-1); }
+  .bar.b2 { background: var(--series-2); }
+  .barval { font-size: 12.5px; font-variant-numeric: tabular-nums; color: var(--text-secondary); width: 44px; text-align: right; }
+  .axisline { border-top: 1px solid var(--baseline); margin-top: 4px; position: relative; }
+  .axisticks { display: flex; justify-content: space-between; font-size: 11.5px; color: var(--muted); margin-top: 3px; }
+  #tooltip {
+    position: fixed; pointer-events: none; z-index: 99; display: none;
+    background: var(--surface-1); border: 1px solid var(--border); border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0,0,0,.18); padding: 8px 12px; font-size: 12.5px;
+  }
+  .tabs { display: flex; gap: 6px; margin-top: 20px; flex-wrap: wrap; }
+  .tab {
+    border: 1px solid var(--border); background: var(--surface-1); color: var(--text-secondary);
+    border-radius: 8px 8px 0 0; padding: 8px 18px; font-size: 13.5px; font-weight: 600;
+    cursor: pointer; font-family: inherit; border-bottom: none;
+  }
+  .tab.active { color: var(--text-primary); border-bottom: 2px solid var(--accent); }
+  .pane { display: none; background: var(--surface-1); border: 1px solid var(--border); border-radius: 0 12px 12px 12px; padding: 20px 24px; }
+  .pane.show { display: block; }
+  .skillmd {
+    font-family: ui-monospace, Consolas, monospace; font-size: 13px;
+    background: var(--code-bg); border-radius: 9px; padding: 16px 18px;
+    white-space: pre-wrap; line-height: 1.7; overflow-x: auto;
+  }
+  .skillmd .add { background: var(--diff-add-bg); color: var(--diff-add-ink); display: block; border-radius: 3px; }
+  .skillmd .del { background: var(--diff-del-bg); color: var(--diff-del-ink); display: block; border-radius: 3px; text-decoration: line-through; }
+  .badge { display: inline-block; font-size: 11px; font-weight: 700; border-radius: 20px; padding: 2px 10px; margin-right: 8px; vertical-align: 1px; }
+  .badge.acc { background: var(--diff-add-bg); color: var(--diff-add-ink); }
+  .badge.rej { background: var(--diff-del-bg); color: var(--diff-del-ink); }
+  .editlog { list-style: none; margin-top: 12px; }
+  .editlog li { padding: 9px 0; border-bottom: 1px solid var(--grid); font-size: 14px; }
+  .editlog li:last-child { border-bottom: none; }
+  .editlog .why { color: var(--muted); font-size: 12.5px; display: block; margin-top: 2px; }
+  .note { font-size: 12.5px; color: var(--muted); margin-top: 12px; }
+  .scorepill { display: inline-block; background: var(--code-bg); border-radius: 8px; padding: 4px 12px; font-size: 13px; margin: 10px 8px 0 0; color: var(--text-secondary); }
+  .scorepill b { color: var(--text-primary); }
+  .cmd {
+    display: flex; align-items: center; gap: 10px; background: var(--code-bg);
+    border-radius: 9px; padding: 11px 14px; margin-top: 10px;
+    font-family: ui-monospace, Consolas, monospace; font-size: 13.5px;
+  }
+  .cmd code { flex: 1; overflow-x: auto; white-space: nowrap; }
+  .cmd .dollar { color: var(--muted); user-select: none; }
+  .copy {
+    border: 1px solid var(--border); background: var(--surface-1); color: var(--text-secondary);
+    border-radius: 6px; padding: 3px 10px; font-size: 11.5px; cursor: pointer; font-family: inherit;
+    flex-shrink: 0;
+  }
+  .copy:hover { color: var(--text-primary); }
+  .steps { counter-reset: step; margin-top: 10px; }
+  .step-item { display: flex; gap: 16px; padding: 18px 0; border-bottom: 1px solid var(--grid); }
+  .step-item:last-child { border-bottom: none; }
+  .step-item::before {
+    counter-increment: step; content: counter(step);
+    width: 30px; height: 30px; flex-shrink: 0; border-radius: 50%;
+    background: var(--accent); color: #fff; font-weight: 700; font-size: 14px;
+    display: flex; align-items: center; justify-content: center; margin-top: 2px;
+  }
+  .step-body { flex: 1; min-width: 0; }
+  .step-body p { color: var(--text-secondary); font-size: 14px; }
+  footer { margin-top: 70px; border-top: 1px solid var(--border); padding: 28px 0 44px; color: var(--muted); font-size: 13px; }
+  footer .wrap { display: flex; gap: 20px; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+
+<nav>
+  <span class="brand">Forward Deployed <span>Engineers</span></span>
+  <a class="navlink" href="#idea">The Idea</a>
+  <a class="navlink" href="#loop">How It Works</a>
+  <a class="navlink" href="#results">Economics</a>
+  <a class="navlink" href="#usecase">Before / After</a>
+  <a class="navlink" href="#market">Market</a>
+  <a class="navlink" href="#start">Get Started</a>
+  <button id="themeBtn" title="Toggle theme">🌙 Dark</button>
+</nav>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="kicker">Kevin Bai (Anthropic / Palantir) · NotebookLM + CE-MARS Research · July 2026</div>
+    <h1>The Complete Guide to <span class="grad">Forward Deployed Engineers</span></h1>
+    <p class="lede" style="margin-top:16px">Forward Deployed Engineers sell outcomes — not software licenses or billable hours. They embed with enterprise customers, build production systems on a shared platform, and drive measurable P&L impact where demos and pilots fail. This is the role powering enterprise AI's $9B+ deployment wave.</p>
+    <div class="hero-stats">
+      <div class="tile"><div class="val">$9B+</div><div class="lbl">Industry FDE commitments (2026)</div></div>
+      <div class="tile"><div class="val">729% <span class="up">↑</span></div><div class="lbl">YoY job posting growth</div></div>
+      <div class="tile"><div class="val">~$4M</div><div class="lbl">Palantir avg contract value</div></div>
+      <div class="tile"><div class="val">88%</div><div class="lbl">Palantir adj. gross margin</div></div>
+    </div>
+    <div class="hero-cta">
+      <a class="btn primary" href="#start">Learn the model</a>
+      <a class="btn" href="https://www.youtube.com/watch?v=KwhgfwOSToQ" target="_blank" rel="noopener">FDE 101 Talk ↗</a>
+      <a class="btn" href="https://a16z.com/services-led-growth/" target="_blank" rel="noopener">a16z Deep Dive ↗</a>
+    </div>
+  </div>
+</header>
+
+<section id="idea">
+  <div class="wrap">
+    <div class="kicker">The idea</div>
+    <h2>Why Forward Deployed Engineering Exists</h2>
+    <p class="lede">Enterprise AI revenue is bottlenecked by production deployment, not model demos. FDEs bridge the gap between complex platforms and non-technical buyers who need outcomes, not tools.</p>
+    <div class="cards">
+      <div class="card"><h3>🎯 Outcome, Not Product</h3><p>The customer buys a business result — higher throughput, better decisions — not a software license or an engineer's time. FDEs own delivery end-to-end.</p></div>
+      <div class="card"><h3>🏗️ Platform Primitives</h3><p>FDEs assemble solutions from shared building blocks (~60% reused, ~40% custom). Without a platform, you're a dev shop with 55 unmaintainable repos.</p></div>
+      <div class="card"><h3>🔄 Productization Loop</h3><p>Every field engagement scouts for generalizable patterns. Custom work feeds back into the platform, reducing future deployment cost and building a durable moat.</p></div>
+      <div class="card"><h3>🤖 AI Amplification</h3><p>AI FDE agents automate ontology building, data transforms, and migrations — letting human FDEs focus on judgment-intensive customer problems.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="loop">
+  <div class="wrap">
+    <div class="kicker">How it works</div>
+    <h2>The FDE Engagement Lifecycle</h2>
+    <p class="lede">Click any stage to see what happens there.</p>
+    <div class="loop" id="loopSteps"></div>
+    <div class="loop-detail" id="loopDetail"></div>
+
+    <div class="sim">
+      <div class="sim-head">
+        <button class="btn primary" id="simBtn">▶ Run FDE Engagement</button>
+        <span style="font-size:13px;color:var(--muted)">Simulated — illustrates the mechanics</span>
+        <span class="sim-score">ARR Generated <b id="simScore">$0</b></span>
+      </div>
+      <div class="sim-log" id="simLog"><div class="dim">Press "Run FDE Engagement" to watch the lifecycle…</div></div>
+    </div>
+  </div>
+</section>
+
+<section id="results">
+  <div class="wrap">
+    <div class="kicker">Economics</div>
+    <h2>FDE Unit Economics vs Traditional Models</h2>
+    <p class="lede">Average Contract Value comparison across delivery models — sources: Palantir IR, industry benchmarks (Plank Research, Perspective AI, mid-2026).</p>
+
+    <div class="viz-root" id="chartACV">
+      <div class="viz-title">Average Contract Value ($M) — higher is better</div>
+      <div class="viz-sub">Enterprise software · Source: Palantir IR, Plank Research 2026</div>
+      <div class="legend">
+        <span><span class="sw" style="background:var(--series-1)"></span>Traditional SaaS</span>
+        <span><span class="sw" style="background:var(--series-2)"></span>FDE-Driven Model</span>
+      </div>
+      <div id="barsACV"></div>
+      <div class="axisline"></div>
+      <div class="axisticks"><span>$0</span><span>$1M</span><span>$2M</span><span>$3M</span><span>$4M</span><span>$5M</span></div>
+    </div>
+
+    <div class="viz-root" id="chartMargin" style="margin-top:18px">
+      <div class="viz-title">Operating Metrics (%) — higher is better</div>
+      <div class="viz-sub">Palantir FY2025/Q1 2026 · Source: Palantir 10-K, earnings materials</div>
+      <div class="legend">
+        <span><span class="sw" style="background:var(--series-1)"></span>Typical Enterprise PS</span>
+        <span><span class="sw" style="background:var(--series-2)"></span>Palantir (FDE + Platform)</span>
+      </div>
+      <div id="barsMargin"></div>
+      <div class="axisline"></div>
+      <div class="axisticks"><span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="usecase">
+  <div class="wrap">
+    <div class="kicker">Before / After</div>
+    <h2>Traditional PS vs Forward Deployed Engineering</h2>
+    <p class="lede">How the same enterprise AI deployment looks under a classic professional services model versus the FDE operating model.</p>
+    <div>
+      <span class="scorepill">Pilot-to-Production: <b>2× with FDE</b></span>
+      <span class="scorepill">Net Dollar Retention: <b>~150%</b></span>
+      <span class="scorepill">Rev/Employee: <b>$1.18M</b></span>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" data-pane="before">📄 Traditional PS</button>
+      <button class="tab" data-pane="after">✨ FDE Model</button>
+      <button class="tab" data-pane="diff">± Key Differences</button>
+      <button class="tab" data-pane="log">🧾 Decision Log</button>
+    </div>
+
+    <div class="pane show" id="pane-before">
+      <div class="skillmd">TRADITIONAL PROFESSIONAL SERVICES MODEL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Billing:        Time & Materials (hourly / daily rate)
+Ownership:      Customer owns bespoke code, vendor walks away
+Deliverable:    Custom solution, often from scratch
+Platform reuse: Minimal — each engagement reinvents the wheel
+Retention:      Low — no expansion incentive after SOW closes
+Margin:         20–35% gross (typical SI/consulting)
+Failure mode:   55 repos, no maintenance, P&L eaten alive
+Talent:         Consultants rotate off; no product feedback loop
+ACV:            &lt;$500K typical for software + PS bundle</div>
+      <p class="note">Composite industry picture based on McKinsey/BCG/Forrester AI deployment studies and Gartner analyst notes.</p>
+    </div>
+    <div class="pane" id="pane-after">
+      <div class="skillmd">FORWARD DEPLOYED ENGINEERING MODEL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Billing:        Platform + usage + outcome-based delivery
+Ownership:      Vendor retains platform; customer gets outcome
+Deliverable:    Production system on shared primitives
+Platform reuse: ~60% built from platform / 40% custom
+Retention:      NDR 120–150% — land, expand, scale
+Margin:         82–88% gross (software-like at scale)
+Failure mode:   Productization stalls → expensive dev shop
+Talent:         Hybrid engineers (code + customer + product)
+ACV:            $1M floor; $4–5M+ at Palantir-class maturity
+
+FLYWHEEL:
+  Field patterns → Productized into platform → Lower future cost
+  Bootcamps (5-day) → High conversion → Lean S&M spend
+  AI FDE agents → Automate transforms → Amplify human FDEs</div>
+      <p class="note">Based on Palantir IR/filings, Kevin Bai FDE 101, a16z services-led growth, and Plank Research 2026.</p>
+    </div>
+    <div class="pane" id="pane-diff">
+      <div class="skillmd"><span class="del">- Billing: Time & Materials (hourly rate)</span>
+<span class="add">+ Billing: Platform + usage + outcome-based delivery</span>
+
+<span class="del">- Ownership: Customer owns bespoke code, vendor leaves</span>
+<span class="add">+ Ownership: Vendor platform + customer outcome</span>
+
+<span class="del">- Platform reuse: Minimal — reinvent each time</span>
+<span class="add">+ Platform reuse: 60% shared primitives / 40% custom</span>
+
+<span class="del">- Retention: Low NDR, no expansion motion</span>
+<span class="add">+ Retention: 120–150% NDR via land-expand-scale</span>
+
+<span class="del">- Margin: 20–35% (services-grade)</span>
+<span class="add">+ Margin: 82–88% (software-grade at scale)</span>
+
+<span class="del">- ACV: &lt;$500K typical</span>
+<span class="add">+ ACV: $1M floor → $4M+ at maturity</span>
+
+<span class="del">- Feedback: No product loop, custom stays custom</span>
+<span class="add">+ Feedback: FDEs scout → patterns → platform features</span></div>
+    </div>
+    <div class="pane" id="pane-log">
+      <ul class="editlog">
+        <li><span class="badge acc">GO</span><b>Two prerequisites met:</b> Complex product + non-technical buyer
+          <span class="why">Decision gate · Kevin Bai's two go/no-go questions both answered YES</span></li>
+        <li><span class="badge acc">GO</span><b>ACV floor cleared:</b> Target customer >$1M potential
+          <span class="why">Economics gate · Sub-$1M deals destroy value with fully-loaded FDE costs of $300–490K/yr</span></li>
+        <li><span class="badge acc">GO</span><b>Platform exists:</b> Shared primitives available for assembly
+          <span class="why">Architecture gate · Without platform you're a dev shop, not an FDE org</span></li>
+        <li><span class="badge rej">NO-GO</span><b>Technical buyer + simple product:</b> Use DevRel/PLG instead
+          <span class="why">Fit check · FDE is high-touch enterprise economics; technical buyers self-serve</span></li>
+        <li><span class="badge rej">NO-GO</span><b>No productization plan:</b> Will become headcount trap
+          <span class="why">Margin protection · Must taper + automate or margins collapse to PS levels</span></li>
+      </ul>
+    </div>
+    <p class="note">Illustrative reconstruction synthesized from Palantir IR, Kevin Bai FDE 101 talk, a16z, Gartner, and Plank Research. Not verbatim from any single source.</p>
+  </div>
+</section>
+
+<section id="market">
+  <div class="wrap">
+    <div class="kicker">Market landscape</div>
+    <h2>Who's Building FDE Organizations (2026)</h2>
+    <p class="lede">The FDE model has been copied from Palantir across the entire AI industry. Major commitments as of mid-2026:</p>
+    <div class="cards">
+      <div class="card"><h3>🏢 OpenAI</h3><p>Deployment Company — $4B+ committed to embedded AI engineers helping enterprises operationalize GPT/o-series models in production.</p></div>
+      <div class="card"><h3>🏢 Anthropic</h3><p>Joint venture — ~$1.5B for customer-embedded engineering. Kevin Bai (founding FDE at Palantir) leads the motion.</p></div>
+      <div class="card"><h3>🏢 Microsoft</h3><p>Frontier Company — ~$2.5B dedicated to deploying AI solutions alongside enterprise customers.</p></div>
+      <div class="card"><h3>🏢 Amazon / AWS</h3><p>$1B FDE org launched June 2026 (TechCrunch) — following the playbook OpenAI and Anthropic established.</p></div>
+      <div class="card"><h3>🏢 Palantir</h3><p>The originator. ~4,500 employees, $5.2B TTM revenue, $1.18M rev/employee. FDEs + AIP + Foundry = the template.</p></div>
+      <div class="card"><h3>🏢 Specialists</h3><p>Plank, Distyl AI, Tribe AI, Scale AI — FDE-as-a-Service providers offering vendor-neutral embedded engineering.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="start">
+  <div class="wrap">
+    <div class="kicker">Get started</div>
+    <h2>Learn More About Forward Deployed Engineering</h2>
+    <div class="steps">
+      <div class="step-item"><div class="step-body">
+        <h3>Watch Kevin Bai's FDE 101</h3>
+        <p>17-minute talk from AI Engineer conference — the definitive primer on what FDE is, when you need it, and why platforms matter.</p>
+        <div class="cmd"><span class="dollar">→</span><code>https://www.youtube.com/watch?v=KwhgfwOSToQ</code><button class="copy">Copy</button></div>
+      </div></div>
+      <div class="step-item"><div class="step-body">
+        <h3>Read a16z "Trading Margin for Moat"</h3>
+        <p>Andreessen Horowitz's analysis of services-led growth — how FDEs trade short-term margin for long-term platform moat.</p>
+        <div class="cmd"><span class="dollar">→</span><code>https://a16z.com/services-led-growth/</code><button class="copy">Copy</button></div>
+      </div></div>
+      <div class="step-item"><div class="step-body">
+        <h3>Check FDE Market Data (Plank Research)</h3>
+        <p>The State of FDE 2026 — $9B+ commitments, job growth, success rates, and the "Palantir Mafia" founder map.</p>
+        <div class="cmd"><span class="dollar">→</span><code>https://joinplank.com/state-of-fde</code><button class="copy">Copy</button></div>
+      </div></div>
+      <div class="step-item"><div class="step-body">
+        <h3>Track Compensation & Demand</h3>
+        <p>FDE Pulse for real-time job postings and salary bands. Levels.fyi for Palantir FDSE/FDE total comp (~$215K median).</p>
+        <div class="cmd"><span class="dollar">→</span><code>https://fdepulse.com</code><button class="copy">Copy</button></div>
+      </div></div>
+      <div class="step-item"><div class="step-body">
+        <h3>Study Palantir's Primary Sources</h3>
+        <p>10-K/10-Q filings, earnings calls, and the AI FDE agent documentation — the richest public evidence on FDE-driven economics.</p>
+        <div class="cmd"><span class="dollar">→</span><code>https://www.palantir.com/docs/foundry/ai-fde/overview</code><button class="copy">Copy</button></div>
+      </div></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span>Research synthesized from Kevin Bai (Anthropic), Palantir IR, a16z, Plank Research, Gartner, Elicit, NotebookLM · 2026 · Educational use</span>
+    <a href="https://www.youtube.com/watch?v=KwhgfwOSToQ" target="_blank" rel="noopener">FDE 101 Talk</a>
+    <a href="https://a16z.com/services-led-growth/" target="_blank" rel="noopener">a16z</a>
+    <a href="https://joinplank.com/state-of-fde" target="_blank" rel="noopener">Plank Research</a>
+  </div>
+</footer>
+
+<div id="tooltip"></div>
+
+<script>
+const root = document.documentElement, themeBtn = document.getElementById('themeBtn');
+function setTheme(t){ root.dataset.theme = t; themeBtn.textContent = t==='dark' ? '☀️ Light' : '🌙 Dark'; localStorage.setItem('xp-theme', t); }
+setTheme(localStorage.getItem('xp-theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
+themeBtn.onclick = () => setTheme(root.dataset.theme==='dark' ? 'light' : 'dark');
+
+const STAGES = [
+  { t:'Acquire / Land', d:'FDE team embeds with the customer for an intensive bootcamp (often 5 days on real customer data). Goal: prove production value on one critical use case. ACV floor: $1M+. The vendor often absorbs pilot costs to prove the model.' },
+  { t:'Build on Platform', d:'FDEs assemble solutions from shared primitives (~60% reused platform capabilities). They never build from scratch — that\'s a dev shop, not FDE. Custom logic is kept minimal and isolated for future generalization.' },
+  { t:'Deploy to Production', d:'The solution goes live under real operational constraints — SSO, data governance, regulatory compliance. FDEs own the outcome until the system delivers measurable P&L impact (revenue uplift or cost reduction).' },
+  { t:'Expand & Productize', d:'Success on use case #1 unlocks expansion (NDR 120–150%). Meanwhile, FDEs identify generalizable patterns and feed them back into the platform. This is the flywheel that creates software-like margins.' },
+  { t:'Taper & Scale', d:'Customer teams assume ownership. FDEs rotate to new accounts or internal product roles. AI FDE agents handle routine operations. The platform carries the value forward without permanent human FDE dependency.' },
+];
+const lsWrap = document.getElementById('loopSteps'), lsDetail = document.getElementById('loopDetail');
+STAGES.forEach((s,i)=>{
+  const el = document.createElement('div');
+  el.className = 'loop-step' + (i===0?' active':'');
+  el.innerHTML = `<div class="num">${i+1}</div><div class="t">${s.t}</div>`;
+  el.onclick = ()=>{ document.querySelectorAll('.loop-step').forEach(x=>x.classList.remove('active')); el.classList.add('active'); showStage(i); };
+  lsWrap.appendChild(el);
+});
+showStage(0);
+function showStage(i){ lsDetail.innerHTML = `<h3>${i+1}. ${STAGES[i].t}</h3><p>${STAGES[i].d}</p>`; }
+
+const SIM = [
+  ['dim','[Week 1] FDE squad deployed to Fortune 500 CPG company…'],
+  ['dim','[Week 1] Bootcamp: ingesting supply-chain data into platform ontology…'],
+  ['ok','✓ Data integration complete — 3 source systems connected   val 0 → 0.2'],
+  ['','[Week 4] Building demand-forecasting workflow on shared primitives…'],
+  ['ok','✓ First production workload live — shelf-placement optimization   val 0.2 → 0.8'],
+  ['','[Month 3] Customer reports 12% throughput improvement…'],
+  ['ok','✓ Use case #1 validated — $800K ARR booked   val 0.8 → 1.5'],
+  ['','[Month 6] Expanding to logistics optimization (use case #2)…'],
+  ['ok','✓ Expansion closed — total ARR now $2.1M   val 1.5 → 2.1'],
+  ['','[Month 9] Identifying reusable connector pattern (CPG → platform)…'],
+  ['ok','✓ Pattern productized into platform — reduces next deploy cost 40%   val 2.1 → 3.2'],
+  ['dim','[Month 12] Customer team trained; FDE taper begins…'],
+  ['ok','✓ Taper complete — customer self-sufficient, NDR 148%   val 3.2 → 4.1'],
+  ['dim','[Result] $4.1M ARR from single account · 2 FDEs · Platform moat strengthened'],
+];
+const simBtn = document.getElementById('simBtn'), simLog = document.getElementById('simLog'), simScore = document.getElementById('simScore');
+let simRunning = false;
+simBtn.onclick = () => {
+  if (simRunning) return;
+  simRunning = true; const label = simBtn.textContent; simBtn.textContent = '… running'; simLog.innerHTML = '';
+  SIM.forEach((line, i) => setTimeout(() => {
+    const d = document.createElement('div');
+    d.className = line[0]; d.textContent = line[1];
+    simLog.appendChild(d); simLog.scrollTop = simLog.scrollHeight;
+    const m = line[1].match(/val [\d.]+ → ([\d.]+)/);
+    if (m && line[0]==='ok') simScore.textContent = '$' + m[1] + 'M';
+    if (i === SIM.length-1) { simRunning = false; simBtn.textContent = label; }
+  }, 750*i));
+};
+
+/* ACV Chart — scale is 0-5 ($M) so values are percentages of 5 */
+const ACV_DATA = [
+  { name:'Palantir (FDE originator)', before: 12, after: 80 },
+  { name:'ServiceNow', before: 24, after: 24 },
+  { name:'Workday', before: 12, after: 12 },
+  { name:'Standard Public SaaS', before: 10, after: 10 },
+];
+const MARGIN_DATA = [
+  { name:'Gross Margin', before: 30, after: 88 },
+  { name:'Operating Margin', before: 12, after: 60 },
+  { name:'Free Cash Flow Margin', before: 8, after: 56 },
+  { name:'Net Dollar Retention (%)', before: 105, after: 150 },
+];
+
+const tooltip = document.getElementById('tooltip');
+function renderBars(el, data, s1Label, s2Label, suffix){
+  const host = document.getElementById(el);
+  data.forEach(d => {
+    const delta = (d.after - d.before);
+    const g = document.createElement('div'); g.className = 'bench';
+    g.innerHTML = `
+      <div class="bench-name"><span>${d.name}</span><span class="delta">${delta>=0?'+':''}${delta}${suffix||''}</span></div>
+      <div class="barrow"><div class="bartrack"><div class="bar b1" data-w="${d.before}" data-tip="${d.name} · ${s1Label}: ${d.before}${suffix||''}"></div></div><span class="barval">${d.before}${suffix||''}</span></div>
+      <div class="barrow"><div class="bartrack"><div class="bar b2" data-w="${d.after}" data-tip="${d.name} · ${s2Label}: ${d.after}${suffix||''}"></div></div><span class="barval">${d.after}${suffix||''}</span></div>`;
+    host.appendChild(g);
+  });
+}
+renderBars('barsACV', ACV_DATA, 'Traditional', 'FDE-Driven', '%');
+renderBars('barsMargin', MARGIN_DATA, 'Typical PS', 'Palantir (FDE+Platform)', '%');
+
+const io = new IntersectionObserver(es => es.forEach(e => {
+  if (e.isIntersecting) { e.target.querySelectorAll('.bar').forEach(b => b.style.width = b.dataset.w + '%'); io.unobserve(e.target); }
+}), { threshold: 0.3 });
+document.querySelectorAll('.viz-root').forEach(v => io.observe(v));
+document.querySelectorAll('.bartrack').forEach(t => {
+  t.addEventListener('mousemove', ev => {
+    const bar = t.querySelector('.bar');
+    tooltip.style.display = 'block';
+    tooltip.textContent = bar.dataset.tip;
+    tooltip.style.left = (ev.clientX + 14) + 'px';
+    tooltip.style.top = (ev.clientY - 10) + 'px';
+  });
+  t.addEventListener('mouseleave', () => tooltip.style.display = 'none');
+});
+
+document.querySelectorAll('.tab').forEach(tab => tab.onclick = () => {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.pane').forEach(p => p.classList.remove('show'));
+  tab.classList.add('active');
+  document.getElementById('pane-' + tab.dataset.pane).classList.add('show');
+});
+document.querySelectorAll('.copy').forEach(btn => btn.onclick = () => {
+  navigator.clipboard.writeText(btn.parentElement.querySelector('code').textContent).then(() => {
+    btn.textContent = '✓ Copied'; setTimeout(() => btn.textContent = 'Copy', 1400);
+  });
+});
+</script>
+</body>
+</html>
