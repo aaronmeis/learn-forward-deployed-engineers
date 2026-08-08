@@ -80,3 +80,7 @@ The Before/After section contrasts a traditional professional services engagemen
 This guide summarizes and visualizes work by **Kevin Bai (Anthropic/Palantir), a16z,
 Plank Research, Palantir IR, Gartner, and the CE-MARS research program (2026)**.
 This explainer page is provided as-is for educational use.
+
+## Disclaimer
+
+This is an **unofficial educational explainer** for personal learning on Forward Deployed Engineering. It is **not affiliated with, endorsed by, or sponsored by** Palantir, Anthropic, OpenAI, a16z, Gartner, or any other company or firm named here. Metrics and examples are illustrative research synthesis, **not** investment or career advice. See [DISCLAIMER.md](./DISCLAIMER.md).
